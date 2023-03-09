@@ -1,0 +1,56 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "AWS CloudFormation template for a static website on S3"
+
+Parameters:
+  BucketName:
+    Description: "Name of the S3 bucket to create"
+    Type: "String"
+    Default: "my-static-website-bucket"
+  IndexDocument:
+    Description: "The name of the index document for the website"
+    Type: "String"
+    Default: "index.html"
+  ErrorDocument:
+    Description: "The name of the error document for the website"
+    Type: "String"
+    Default: "error.html"
+
+Resources:
+  WebsiteBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !Ref BucketName
+      WebsiteConfiguration:
+        IndexDocument: !Ref IndexDocument
+        ErrorDocument: !Ref ErrorDocument
+      AccessControl: "PublicRead"
+  WebsiteBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Id: "MyPolicy"
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "PublicReadForGetBucketObjects"
+            Effect: "Allow"
+            Principal: "*"
+            Action:
+              - "s3:GetObject"
+            Resource: !Sub "arn:aws:s3:::${WebsiteBucket}/*"
+  DNSRecord:
+    Type: "AWS::Route53::RecordSetGroup"
+    Properties:
+      HostedZoneName: !Ref HostedZoneName
+      RecordSets:
+        - Name: !Sub "${BucketName}.${HostedZoneName}."
+          Type: "A"
+          AliasTarget:
+            DNSName: !GetAtt [WebsiteBucket, "DomainName"]
+            HostedZoneId: "Z3AQBSTGFYJSTF"
+
+Outputs:
+  WebsiteURL:
+    Description: "URL of the static website"
+    Value: !Sub "http://${BucketName}.${HostedZoneName}"

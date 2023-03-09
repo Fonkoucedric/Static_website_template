@@ -1,0 +1,1 @@
+this is a cloudformation template to launch a static website
